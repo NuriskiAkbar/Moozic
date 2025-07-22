@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/miniPlayerLayout"
+    android:layout_width="match_parent"
+    android:layout_height="80dp"
+    android:orientation="horizontal"
+    android:background="@drawable/bg_mini_player"
+    android:padding="8dp">
+
+    <FrameLayout
+        android:id="@+id/youtube_container"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:visibility="visible">
+
+        <com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+            android:id="@+id/miniyoutubeplayer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="4"
+        android:orientation="vertical"
+        android:paddingLeft="8dp">
+
+        <TextView
+            android:id="@+id/tv_title_mini_player"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="title song"
+            android:ellipsize="marquee"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_singer_mini_player"
+            android:textColor="@color/white"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="singer" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/iv_play_mini_player"
+        android:layout_width="0dp"
+        android:layout_height="24dp"
+        android:layout_gravity="center"
+        android:layout_weight="1"
+        android:src="@drawable/play" />
+
+    <ImageView
+        android:id="@+id/iv_close_mini_player"
+        android:layout_width="0dp"
+        android:layout_height="24dp"
+        android:layout_gravity="center"
+        android:layout_weight="1"
+        android:src="@drawable/mingcute_close_fill" />
+
+</LinearLayout>
