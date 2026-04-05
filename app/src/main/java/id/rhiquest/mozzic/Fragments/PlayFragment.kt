@@ -1,95 +1,188 @@
 package id.rhiquest.mozzic.Fragments
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.SeekBar
 import android.widget.Toast
-import androidx.annotation.NonNull
+import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.YouTubePlayerListener
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+import com.bumptech.glide.Glide
 import id.rhiquest.mozzic.R
 import id.rhiquest.mozzic.Utils.DataUtils.SongItem
+import id.rhiquest.mozzic.Utils.NetworkUtils.TextUtils
 import id.rhiquest.mozzic.databinding.FragmentPlayBinding
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 
 class PlayFragment : BaseFragment<FragmentPlayBinding, PlayViewModel>() {
     override val viewModel: PlayViewModel by activityViewModels()
-    private var youTubePlayerInstance: YouTubePlayer? = null
 
     override val inflateBinding: (LayoutInflater, ViewGroup?, Boolean) -> FragmentPlayBinding
         get() = FragmentPlayBinding::inflate
 
-    private var lastVideoId: String? = null
-    private var isFirstLoad = true
+    private var isUserSeeking = false
 
-    override fun initObserver() {}
-
-    override fun initView() {
-        initYoutube()
-    }
-
-    private fun initYoutube() {
-        val miniPlayerView = binding?.root?.findViewById<YouTubePlayerView>(R.id.main_youtube_player)
-        if (miniPlayerView == null) {
-            Log.e("YTView", "YouTubePlayerView not found!")
-            return
-        } else {
-            Log.d("YTView", "YouTubePlayerView ditemukan")
-        }
-        miniPlayerView?.let { lifecycle.addObserver(it) }
-
-        miniPlayerView?.addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
-            override fun onReady(youTubePlayer: YouTubePlayer) {
-                youTubePlayerInstance = youTubePlayer
-                Log.d("cekmasuk", "ini masuk kok")
-
-                youTubePlayer.addListener(object : AbstractYouTubePlayerListener() {
-                    override fun onCurrentSecond(youTubePlayer: YouTubePlayer, second: Float) {
-                        viewModel.updateSecond(second)
-                    }
-                })
-
-                lifecycleScope.launch {
-                    viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                        combine(
-                            viewModel.currentMusic,
-                            viewModel.currentSecond
-                        ) { song, second ->
-                            Pair(song, second)
-                        }.collect { (song, second) ->
-                            if (song != null && youTubePlayerInstance != null) {
-                                val currentId = song.videoId
-
-                                if (song.videoId != lastVideoId) {
-                                    youTubePlayerInstance?.cueVideo(currentId, second)
-                                    youTubePlayerInstance?.play()
-                                    lastVideoId = currentId
-                                    isFirstLoad = false
-                                } else if (isFirstLoad) {
-                                    youTubePlayerInstance?.seekTo(second)
-                                    isFirstLoad = false
-                                }
-                            }
-                        }
+    override fun initObserver() {
+        // Observe current music changes
+        lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.currentMusic.collect { song ->
+                    if (song != null) {
+                        showPlayingState(song)
+                    } else {
+                        showEmptyState()
                     }
                 }
             }
-            override fun onError(youTubePlayer: YouTubePlayer, error: PlayerConstants.PlayerError) {
-                Log.e("YTPlayerError", "Player error: $error")
+        }
+
+        // Observe play/pause state to update button icon
+        lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.isPlaying.collect { isPlaying ->
+                    binding?.ivPlayPauseBtn?.setImageResource(
+                        if (isPlaying) R.drawable.pause else R.drawable.play
+                    )
+                }
+            }
+        }
+
+        // Observe current second → update SeekBar + time label
+        lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.currentSecond.collect { second ->
+                    if (!isUserSeeking) {
+                        val total = viewModel.totalDuration.value
+                        if (total > 0f) {
+                            val progress = ((second / total) * 1000).toInt()
+                            binding?.seekBarProgress?.progress = progress
+                        }
+                        binding?.tvCurrentTime?.text = formatTime(second)
+                    }
+                }
+            }
+        }
+
+        // Observe total duration → update total time label
+        lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.totalDuration.collect { duration ->
+                    binding?.tvTotalTime?.text = formatTime(duration)
+                }
+            }
+        }
+    }
+
+    override fun initView() {
+        initButtons()
+        initSeekBar()
+        // Show initial state
+        val currentSong = viewModel.currentMusic.value
+        if (currentSong != null) {
+            showPlayingState(currentSong)
+        } else {
+            showEmptyState()
+        }
+    }
+
+    private fun initSeekBar() {
+        binding?.seekBarProgress?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    val total = viewModel.totalDuration.value
+                    if (total > 0f) {
+                        val seekSecond = (progress / 1000f) * total
+                        binding?.tvCurrentTime?.text = formatTime(seekSecond)
+                    }
+                }
             }
 
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                isUserSeeking = true
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                isUserSeeking = false
+                val progress = seekBar?.progress ?: 0
+                val total = viewModel.totalDuration.value
+                if (total > 0f) {
+                    val seekSecond = (progress / 1000f) * total
+                    viewModel.seekTo(seekSecond)
+                }
+            }
         })
     }
 
+    private fun initButtons() {
+        binding?.apply {
+            // Play/Pause
+            btnPlayPause.setOnClickListener {
+                viewModel.togglePlayPause()
+            }
+
+            // Favorite
+            btnFavoritePlay.setOnClickListener {
+                val currentSong = viewModel.currentMusic.value
+                if (currentSong != null) {
+                    viewModel.addToFavorites(currentSong)
+                    Toast.makeText(context, "Ditambahkan ke favorit ❤️", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            // Previous
+            btnPrevious.setOnClickListener {
+                viewModel.playPreviousFromFavorites()
+            }
+
+            // Next
+            btnNext.setOnClickListener {
+                viewModel.playNextFromFavorites()
+            }
+
+            // Stop
+            btnStopPlay.setOnClickListener {
+                viewModel.stopMusic()
+            }
+        }
+    }
+
+    private fun showPlayingState(song: SongItem) {
+        binding?.apply {
+            svPlayingState.isVisible = true
+            llEmptyPlay.isVisible = false
+
+            // Load thumbnail
+            Glide.with(ivPlayThumbnail)
+                .load(song.thumbanailUrl)
+                .centerCrop()
+                .into(ivPlayThumbnail)
+
+            TextUtils.parseSingerAndTitle(song.title).let { (singer, title) ->
+                tvPlayTitle.text = title
+                tvPlaySinger.text = singer
+            }
+
+            // Reset progress
+            seekBarProgress.progress = 0
+            tvCurrentTime.text = "0:00"
+            tvTotalTime.text = "0:00"
+        }
+    }
+
+    private fun showEmptyState() {
+        binding?.apply {
+            svPlayingState.isVisible = false
+            llEmptyPlay.isVisible = true
+        }
+    }
+
+    private fun formatTime(seconds: Float): String {
+        val totalSec = seconds.toInt()
+        val min = totalSec / 60
+        val sec = totalSec % 60
+        return "%d:%02d".format(min, sec)
+    }
 }

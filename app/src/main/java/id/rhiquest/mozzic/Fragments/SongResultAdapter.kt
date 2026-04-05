@@ -16,7 +16,11 @@ class SongResultAdapter(
     inner class SongResultViewHolder(private val binding: ItemSearchBinding) : RecyclerView.ViewHolder(binding.root){
         fun bindData(songList: SongItem?){
             binding.tvTitleSong.text = songList?.title
-            Glide.with(binding.ivbanner).load(songList?.thumbanailUrl).into(binding.ivbanner)
+            binding.tvSinger.text = songList?.singer
+            Glide.with(binding.ivbanner)
+                .load(songList?.thumbanailUrl)
+                .centerCrop()
+                .into(binding.ivbanner)
             binding.ivPlayDirect.setOnClickListener {
                 onPlayDirectIconClick(songList!!)
             }

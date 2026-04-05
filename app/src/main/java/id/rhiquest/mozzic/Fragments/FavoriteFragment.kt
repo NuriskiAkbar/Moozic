@@ -1,60 +1,92 @@
 package id.rhiquest.mozzic.Fragments
 
-import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import id.rhiquest.mozzic.R
+import android.widget.Toast
+import androidx.core.view.isVisible
+import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
+import androidx.recyclerview.widget.LinearLayoutManager
+import id.rhiquest.mozzic.Utils.DataUtils.SongItem
+import id.rhiquest.mozzic.Utils.NetworkUtils.BaseResponse
+import id.rhiquest.mozzic.databinding.FragmentFavoriteBinding
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
+class FavoriteFragment : BaseFragment<FragmentFavoriteBinding, FavoriteViewModel>() {
 
-/**
- * A simple [Fragment] subclass.
- * Use the [FavoriteFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
-class FavoriteFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
+    override val viewModel: FavoriteViewModel by viewModels()
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
+    private val playViewModel: PlayViewModel by activityViewModels()
+
+    override val inflateBinding: (LayoutInflater, ViewGroup?, Boolean) -> FragmentFavoriteBinding
+        get() = FragmentFavoriteBinding::inflate
+
+    private var adapter: FavoriteAdapter? = null
+
+    override fun initObserver() {
+        viewModel.favorites.observe(viewLifecycleOwner) {
+            when (it) {
+                is BaseResponse.Loading -> showLoading()
+                is BaseResponse.Success -> showFavorites(it.data)
+                is BaseResponse.Error -> showError(it.msg)
+            }
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_favorite, container, false)
+    override fun initView() {
+        viewModel.loadFavorites()
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment FavoriteFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            FavoriteFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
+    private fun showLoading() {
+        binding?.apply {
+            progressFavorite.isVisible = true
+            rvFavorites.isVisible = false
+            llEmptyState.isVisible = false
+        }
+    }
+
+    private fun showFavorites(data: List<SongItem>?) {
+        binding?.apply {
+            progressFavorite.isVisible = false
+
+            if (data.isNullOrEmpty()) {
+                rvFavorites.isVisible = false
+                llEmptyState.isVisible = true
+            } else {
+                llEmptyState.isVisible = false
+                rvFavorites.isVisible = true
+                rvFavorites.layoutManager =
+                    LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
+
+                if (adapter == null) {
+                    adapter = FavoriteAdapter(
+                        favoriteList = data,
+                        onPlayClick = { songItem ->
+                            playViewModel.playMusic(songItem)
+                        },
+                        onDeleteClick = { songItem ->
+                            viewModel.deleteFavorite(songItem)
+                            Toast.makeText(context, "Dihapus dari favorit", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                    rvFavorites.adapter = adapter
+                } else {
+                    adapter?.updateList(data)
                 }
             }
+        }
+    }
+
+    private fun showError(msg: String?) {
+        binding?.apply {
+            progressFavorite.isVisible = false
+            rvFavorites.isVisible = false
+            llEmptyState.isVisible = true
+            Toast.makeText(context, msg ?: "Terjadi kesalahan", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.loadFavorites()
     }
 }

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand (stays same or slightly lighter for dark) -->
+    <color name="blue_main">#E0E8F0</color>
+    <color name="accent">#4FC3F7</color>
+
+    <!-- Bottom Nav -->
+    <color name="nav_bg_start">#0D1117</color>
+    <color name="nav_bg_end">#161B22</color>
+    <color name="nav_icon_active">#4FC3F7</color>
+    <color name="nav_icon_inactive">#6B7D8E</color>
+    <color name="nav_indicator">#1A4FC3F7</color>
+
+    <!-- Semantic: Page backgrounds -->
+    <color name="page_background">#0D1117</color>
+    <color name="surface">#161B22</color>
+
+    <!-- Semantic: Text -->
+    <color name="text_primary">#E6EDF3</color>
+    <color name="text_secondary">#8B949E</color>
+    <color name="text_hint">#484F58</color>
+    <color name="text_on_accent">#FFFFFFFF</color>
+
+    <!-- Semantic: Card -->
+    <color name="card_background">#161B22</color>
+    <color name="card_stroke">#30363D</color>
+
+    <!-- Semantic: Song Info Card -->
+    <color name="song_info_bg">#1C2128</color>
+    <color name="song_info_stroke">#30363D</color>
+
+    <!-- Semantic: Control Buttons -->
+    <color name="btn_favorite_bg">#3D1F1F</color>
+    <color name="btn_secondary_bg">#1C2333</color>
+
+    <!-- Semantic: SeekBar progress -->
+    <color name="seekbar_track">#30363D</color>
+    <color name="time_label">#6E7681</color>
+
+    <!-- Semantic: Divider -->
+    <color name="divider">#30363D</color>
+
+    <!-- Semantic: Empty state -->
+    <color name="empty_icon_tint">#484F58</color>
+    <color name="empty_text">#8B949E</color>
+    <color name="empty_text_secondary">#484F58</color>
+
+    <!-- Favorite / Danger -->
+    <color name="favorite_red">#F85149</color>
+
+    <!-- Search bar -->
+    <color name="search_box_stroke">#4FC3F7</color>
+    <color name="search_hint">#4FC3F7</color>
+</resources>

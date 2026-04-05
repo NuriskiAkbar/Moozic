@@ -11,7 +11,7 @@ interface ApiInterface {
         @Query("type") type: String = "video",
         @Query("q") query: String,
         @Query("key") apiKey: String = UrlConstant.API_TOKEN,
-        @Query("maxResults") maxResults: Int = 20
+        @Query("maxResults") maxResults: Int = 5
     ): Response<SearchResponse>
 
     companion object{

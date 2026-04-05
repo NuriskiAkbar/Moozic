@@ -21,7 +21,7 @@ class BrowseFragment: BaseFragment<FragmentBrowseBinding, BrowseViewModel>() {
 
     private val searchJob: Job? = null
 
-    override val viewModel: BrowseViewModel by viewModels()
+    override val viewModel: BrowseViewModel by activityViewModels()
 
     private val playViewModel: PlayViewModel by activityViewModels()
 
@@ -48,12 +48,16 @@ class BrowseFragment: BaseFragment<FragmentBrowseBinding, BrowseViewModel>() {
         binding?.apply {
             progressSonglist.isVisible = true
             rvSongresult.isVisible = false
+            animationView.isVisible = false
+            tvSearchHint.isVisible = false
         }
     }
 
     private fun showResults(data: List<SongItem>?) {
         binding?.apply {
             progressSonglist.isVisible = false
+            animationView.isVisible = false
+            tvSearchHint.isVisible = false
             rvSongresult.apply {
                 isVisible = true
                 layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
@@ -63,7 +67,8 @@ class BrowseFragment: BaseFragment<FragmentBrowseBinding, BrowseViewModel>() {
                         playViewModel.playMusic(songItem)
                     },
                     onFavoriteIconClick = { songItem ->
-                        Toast.makeText(requireContext(), "${songItem.title}", Toast.LENGTH_SHORT).show()
+                        playViewModel.addToFavorites(songItem)
+                        Toast.makeText(context, "Ditambahkan ke favorit", Toast.LENGTH_SHORT).show()
                     })
             }
         }
@@ -76,14 +81,33 @@ class BrowseFragment: BaseFragment<FragmentBrowseBinding, BrowseViewModel>() {
     }
 
     override fun initView() {
-        binding?.etLokasi?.addTextChangedListener(object : TextWatcher {
+        binding?.etSearchLagu?.addTextChangedListener(object : TextWatcher {
             private var searchJob: Job? = null
 
             override fun afterTextChanged(s: Editable?) {
                 searchJob?.cancel()
+                if (s.isNullOrEmpty()) {
+                    // Show Lottie animation and hint text when search is cleared
+                    binding?.apply {
+                        animationView.isVisible = true
+                        tvSearchHint.isVisible = true
+                        rvSongresult.isVisible = false
+                        progressSonglist.isVisible = false
+                    }
+                    return
+                }
                 searchJob = lifecycleScope.launch {
-                    delay(300L)
-                    viewModel.songList(s.toString())
+                    val query = s.toString()
+                    val videoId = viewModel.extractYoutubeVideoId(query)
+                    
+                    if (videoId != null) {
+                        // Bypass delay for direct youtube link
+                        viewModel.parseYoutubeUrl(query, videoId)
+                    } else {
+                        // Standard debounce delay for text search
+                        delay(3000L)
+                        viewModel.songList(query)
+                    }
                 }
             }
 

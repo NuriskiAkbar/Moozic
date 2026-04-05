@@ -1,12 +1,17 @@
+import java.text.SimpleDateFormat
+import java.util.Date
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.parcelize)
+    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.hilt)
 }
 
 android {
     namespace = "id.rhiquest.mozzic"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "id.rhiquest.mozzic"
@@ -28,8 +33,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     viewBinding {
@@ -40,8 +45,21 @@ android {
         viewBinding = true
     }
 
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        jvmToolchain(17)
+    }
+
+    applicationVariants.all {
+        val variantName = name
+        val appVersionName = versionName ?: "1.0"
+        val appVersionCode = versionCode
+
+        val dateString = SimpleDateFormat("ddMMyyyy").format(Date())
+        val finalApkName = "Mozzic_${appVersionName}_${dateString}_${appVersionCode}_${variantName}.apk"
+        outputs.all {
+            val defaultOutput = this as? com.android.build.gradle.internal.api.ApkVariantOutputImpl
+            defaultOutput?.outputFileName = finalApkName
+        }
     }
 }
 
@@ -67,6 +85,17 @@ dependencies {
     implementation(libs.navigation.ui)
 
     implementation(libs.youtube.player)
+
+    implementation(libs.room.db)
+    implementation(libs.room.ktx)
+    kapt(libs.androidx.room.compiler)
+
+    implementation(libs.lottie.animation)
+
+    implementation(libs.androidx.media)
+
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
