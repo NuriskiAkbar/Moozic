@@ -142,7 +142,7 @@
                     android:layout_height="20dp"
                     android:contentDescription="favorite"
                     app:srcCompat="@drawable/favorite"
-                    app:tint="@color/favorite_red" />
+                    app:tint="@color/selector_fav_icon_color" />
 
                 <TextView
                     android:id="@+id/tv_add_to_favorite"
@@ -150,9 +150,9 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="6dp"
                     android:text="Favorit"
-                    android:textColor="@color/favorite_red"
                     android:textSize="13sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    app:tint="@color/selector_fav_icon_color"/>
 
             </LinearLayout>
 

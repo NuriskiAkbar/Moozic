@@ -23,6 +23,7 @@
     <color name="text_secondary">#78909C</color>
     <color name="text_hint">#B0BEC5</color>
     <color name="text_on_accent">#FFFFFFFF</color>
+    <color name="text_on_button">#FFFFFFFF</color>
 
     <!-- Semantic: Card -->
     <color name="card_background">#FFFFFFFF</color>
@@ -50,6 +51,7 @@
 
     <!-- Favorite / Danger -->
     <color name="favorite_red">#E53935</color>
+    <color name="favorite_unselected">#B0BEC5</color>
 
     <!-- Search bar -->
     <color name="search_box_stroke">@color/blue_main</color>

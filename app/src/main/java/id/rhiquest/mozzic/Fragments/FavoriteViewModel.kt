@@ -9,6 +9,7 @@ import id.rhiquest.mozzic.Utils.DataUtils.Room.FavoriteEntity
 import id.rhiquest.mozzic.Utils.DataUtils.Room.LocalAppDatabase
 import id.rhiquest.mozzic.Utils.DataUtils.SongItem
 import id.rhiquest.mozzic.Utils.NetworkUtils.BaseResponse
+import id.rhiquest.mozzic.Utils.DataUtils.Room.LocalSongEntity
 import kotlinx.coroutines.launch
 
 class FavoriteViewModel(application: Application) : AndroidViewModel(application) {
@@ -16,6 +17,7 @@ class FavoriteViewModel(application: Application) : AndroidViewModel(application
     private val dbHelper = DatabaseHelperImpl(LocalAppDatabase.getInstance(application))
 
     val favorites: MutableLiveData<BaseResponse<List<SongItem>>> = MutableLiveData()
+    val localSongs: MutableLiveData<BaseResponse<List<SongItem>>> = MutableLiveData()
 
     fun loadFavorites() {
         favorites.value = BaseResponse.Loading()
@@ -40,6 +42,44 @@ class FavoriteViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
+
+    fun loadLocalSongs() {
+        localSongs.value = BaseResponse.Loading()
+        viewModelScope.launch {
+            try {
+                val entities = dbHelper.getLocalSongs()
+                val songItems = entities.map { 
+                    SongItem(
+                        singer = it.artistLocalSong,
+                        title = it.titleLocalSong,
+                        thumbanailUrl = "",
+                        videoId = it.uriLocalSong
+                    )
+                }
+                localSongs.value = BaseResponse.Success(songItems)
+            } catch (e: Exception) {
+                localSongs.value = BaseResponse.Error(e.message)
+            }
+        }
+    }
+
+    fun addLocalSong(uri: String, title: String, artist: String) {
+        viewModelScope.launch {
+            try {
+                val song = LocalSongEntity(
+                    idLocalSong = System.currentTimeMillis() + uri.hashCode(), // Generate somewhat unique ID
+                    titleLocalSong = title,
+                    artistLocalSong = artist,
+                    uriLocalSong = uri
+                )
+                dbHelper.insertLocalSong(song)
+                loadLocalSongs()
+            } catch (e: Exception) {
+                localSongs.value = BaseResponse.Error(e.message)
+            }
+        }
+    }
+
 
     private fun FavoriteEntity.toSongItem(): SongItem {
         return SongItem(

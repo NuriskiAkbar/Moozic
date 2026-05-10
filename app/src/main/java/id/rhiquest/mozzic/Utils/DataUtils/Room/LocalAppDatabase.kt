@@ -7,13 +7,15 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [
-        FavoriteEntity::class
+        FavoriteEntity::class,
+        LocalSongEntity::class
                ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class LocalAppDatabase : RoomDatabase() {
     abstract fun favoriteDao(): FavoriteDao
+    abstract fun localSongDao(): LocalSongDao
 
     companion object {
         const val DATABASE_NAME = "local_app_database"
@@ -34,6 +36,8 @@ abstract class LocalAppDatabase : RoomDatabase() {
             context.applicationContext,
             LocalAppDatabase::class.java,
             DATABASE_NAME
-        ).build()
+        )
+            .addMigrations(DatabaseMigrations.MIGRATION_1_2)
+            .build()
     }
 }
