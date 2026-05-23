@@ -5,27 +5,17 @@ import com.bumptech.glide.Glide
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.res.ColorStateList
 import android.graphics.Color
-import android.net.Uri
 import android.os.Build
-import android.util.Log
-import android.view.Gravity
 import android.view.LayoutInflater
-import android.widget.LinearLayout
 import androidx.activity.viewModels
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
-import androidx.core.view.marginTop
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
-import androidx.viewbinding.ViewBinding
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
@@ -34,7 +24,6 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTube
 import id.rhiquest.mozzic.Fragments.PlayViewModel
 import id.rhiquest.mozzic.Service.MusicService
 import id.rhiquest.mozzic.Utils.DataUtils.SongItem
-import id.rhiquest.mozzic.Utils.DimensionUtils.dpToPx
 import id.rhiquest.mozzic.Utils.NetworkUtils.TextUtils
 import id.rhiquest.mozzic.databinding.ActivityMainBinding
 import id.rhiquest.mozzic.databinding.LayoutMiniPlayerBinding
@@ -42,7 +31,10 @@ import kotlinx.coroutines.launch
 import kotlin.getValue
 import android.content.BroadcastReceiver
 import android.content.IntentFilter
+import android.net.Uri
 import androidx.core.net.toUri
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
 
 class MainActivity : BaseActivity<ActivityMainBinding>() {
 
@@ -51,6 +43,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     private var miniPlayerYouTubeView: YouTubePlayerView? = null
     private var lastLoadedVideoId: String? = null
     private lateinit var navController: NavController
+    private var exoPlayerInstance: ExoPlayer? = null
+    private var isPlayingLocal: Boolean = false
 
     // BroadcastReceiver for notification actions
     private val musicActionReceiver = object : BroadcastReceiver() {
@@ -86,6 +80,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         registerMusicReceiver()
         initNavbar()
         initYoutube()
+        initExoPlayer()
         initMiniPlayerButtons()
         initSeekObserver()
     }
@@ -143,13 +138,21 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         // Observe play/pause state → control YouTube player + update icon + update notification
         lifecycleScope.launch {
             playViewModel.isPlaying.collect { isPlaying ->
-                // Only control YouTube player after initial setup to avoid
-                // interrupting playback when activity resumes from background
-                if (isPlayerInitialized && !isLoadingNewVideo) {
+                if (isPlayingLocal) {
                     if (isPlaying) {
-                        youTubePlayerInstance?.play()
+                        exoPlayerInstance?.play()
                     } else {
-                        youTubePlayerInstance?.pause()
+                        exoPlayerInstance?.pause()
+                    }
+                } else {
+                    // Only control YouTube player after initial setup to avoid
+                    // interrupting playback when activity resumes from background
+                    if (isPlayerInitialized && !isLoadingNewVideo) {
+                        if (isPlaying) {
+                            youTubePlayerInstance?.play()
+                        } else {
+                            youTubePlayerInstance?.pause()
+                        }
                     }
                 }
                 viewBinding.miniPlayerPanel.ivPlayMiniPlayer.setImageResource(
@@ -210,6 +213,37 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             putExtra(MusicService.EXTRA_TOTAL_DURATION, playViewModel.totalDuration.value)
         }
         startService(intent)
+    }
+
+    private fun initExoPlayer() {
+        exoPlayerInstance = ExoPlayer.Builder(this).build()
+        exoPlayerInstance?.addListener(object : androidx.media3.common.Player.Listener {
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                super.onPlayWhenReadyChanged(playWhenReady, reason)
+                playViewModel.setPlaying(playWhenReady)
+            }
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                super.onPlaybackStateChanged(playbackState)
+                if (playbackState == androidx.media3.common.Player.STATE_ENDED) {
+                    playViewModel.playNextFromFavorites()
+                }
+            }
+        })
+
+        lifecycleScope.launch {
+            while (true) {
+                if (isPlayingLocal && exoPlayerInstance?.isPlaying == true) {
+                    val duration = (exoPlayerInstance?.duration ?: 0L) / 1000f
+                    if (duration > 0) {
+                        playViewModel.updateDuration(duration)
+                    }
+                    val currentPos = (exoPlayerInstance?.currentPosition ?: 0L) / 1000F
+                    playViewModel.updateSecond(currentPos)
+                }
+                kotlinx.coroutines.delay(1000)
+            }
+        }
     }
 
     private fun initYoutube() {
@@ -292,11 +326,10 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     private fun playMusic(youTubePlayer: YouTubePlayer, music: SongItem?) {
         val shouldPlay = playViewModel.isPlaying.value
         music?.videoId?.let { videoId ->
-            Log.d("cekmusik", videoId)
-            if (shouldPlay) {
-                youTubePlayer.loadVideo(videoId, 0f)  // auto-play
+            if (videoId.contains("content", ignoreCase = true)){
+                playSongFromLocal(videoId)
             } else {
-                youTubePlayer.cueVideo(videoId, 0f)   // load only, no auto-play
+                playSongFromYoutube(youTubePlayer, videoId, shouldPlay)
             }
         }
 
@@ -314,6 +347,32 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         // Start foreground service for background playback
         if (music != null) {
             startMusicService(music, shouldPlay)
+        }
+    }
+
+    private fun playSongFromLocal(videoId: String?) {
+        isPlayingLocal = true
+        youTubePlayerInstance?.pause()
+        val mediaItem = MediaItem.fromUri(
+            videoId!!.toUri()
+        )
+
+        exoPlayerInstance?.setMediaItem(mediaItem)
+        exoPlayerInstance?.prepare()
+        exoPlayerInstance?.play()
+    }
+
+    private fun playSongFromYoutube(
+        youTubePlayer: YouTubePlayer,
+        videoId: String,
+        shouldPlay: Boolean
+    ){
+        isPlayingLocal = false
+        exoPlayerInstance?.pause()
+        if (shouldPlay) {
+            youTubePlayer.loadVideo(videoId, 0f)  // auto-play
+        } else {
+            youTubePlayer.cueVideo(videoId, 0f)   // load only, no auto-play
         }
     }
 

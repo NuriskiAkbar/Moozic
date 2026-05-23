@@ -93,6 +93,9 @@ dependencies {
     implementation(libs.lottie.animation)
 
     implementation(libs.androidx.media)
+    implementation(libs.exo.player)
+    implementation(libs.exo.player.dash)
+    implementation(libs.exo.player.ui)
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)

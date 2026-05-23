@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import id.rhiquest.mozzic.R
 import id.rhiquest.mozzic.Utils.DataUtils.SongItem
 import id.rhiquest.mozzic.databinding.ItemFavoriteBinding
 
@@ -20,6 +21,7 @@ class FavoriteAdapter(
             binding.tvFavoriteSinger.text = item.singer
             Glide.with(binding.ivFavoriteThumbnail)
                 .load(item.thumbanailUrl)
+                .error(R.drawable.gemini_generated_image_cnxuuncnxuuncnxu_1)
                 .into(binding.ivFavoriteThumbnail)
 
             binding.ivFavoritePlay.setOnClickListener {
