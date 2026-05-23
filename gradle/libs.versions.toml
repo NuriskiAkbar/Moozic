@@ -23,6 +23,7 @@ roomKtx = "2.8.4"
 hilt = "2.57.1"
 lottie = "6.0.0"
 androidxMedia = "1.7.0"
+exoPlayer = "1.10.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -54,6 +55,9 @@ hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
 lottie-animation = { group = "com.airbnb.android", name = "lottie", version.ref = "lottie"}
 androidx-media = { group = "androidx.media", name = "media", version.ref = "androidxMedia" }
+exo-player = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "exoPlayer"}
+exo-player-dash = { group = "androidx.media3", name = "media3-exoplayer-dash", version.ref = "exoPlayer"}
+exo-player-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "exoPlayer"}
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

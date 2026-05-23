@@ -19,8 +19,6 @@ import kotlinx.coroutines.launch
 
 class BrowseFragment: BaseFragment<FragmentBrowseBinding, BrowseViewModel>() {
 
-    private val searchJob: Job? = null
-
     override val viewModel: BrowseViewModel by activityViewModels()
 
     private val playViewModel: PlayViewModel by activityViewModels()

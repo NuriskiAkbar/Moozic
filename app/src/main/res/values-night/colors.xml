@@ -20,6 +20,7 @@
     <color name="text_secondary">#8B949E</color>
     <color name="text_hint">#484F58</color>
     <color name="text_on_accent">#FFFFFFFF</color>
+    <color name="text_on_button">#29343F</color>
 
     <!-- Semantic: Card -->
     <color name="card_background">#161B22</color>

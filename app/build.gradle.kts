@@ -17,8 +17,8 @@ android {
         applicationId = "id.rhiquest.mozzic"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -51,7 +51,7 @@ android {
 
     applicationVariants.all {
         val variantName = name
-        val appVersionName = versionName ?: "1.0"
+        val appVersionName = versionName ?: "1.1"
         val appVersionCode = versionCode
 
         val dateString = SimpleDateFormat("ddMMyyyy").format(Date())
@@ -93,6 +93,9 @@ dependencies {
     implementation(libs.lottie.animation)
 
     implementation(libs.androidx.media)
+    implementation(libs.exo.player)
+    implementation(libs.exo.player.dash)
+    implementation(libs.exo.player.ui)
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
