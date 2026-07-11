@@ -21,7 +21,8 @@ class FavoriteAdapter(
             binding.tvFavoriteSinger.text = item.singer
             Glide.with(binding.ivFavoriteThumbnail)
                 .load(item.thumbanailUrl)
-                .error(R.drawable.gemini_generated_image_cnxuuncnxuuncnxu_1)
+                .error(R.drawable.icon_thumbnail_error)
+                .fitCenter()
                 .into(binding.ivFavoriteThumbnail)
 
             binding.ivFavoritePlay.setOnClickListener {
