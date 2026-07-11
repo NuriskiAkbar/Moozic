@@ -1,6 +1,7 @@
 package id.rhiquest.mozzic.Fragments
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -14,7 +15,7 @@ class SongResultAdapter(
 ): RecyclerView.Adapter<SongResultAdapter.SongResultViewHolder>() {
 
     inner class SongResultViewHolder(private val binding: ItemSearchBinding) : RecyclerView.ViewHolder(binding.root){
-        fun bindData(songList: SongItem?){
+        fun bindData(songList: SongItem?, isLastPosition: Boolean = false){
             binding.tvTitleSong.text = songList?.title
             binding.tvSinger.text = songList?.singer
             Glide.with(binding.ivbanner)
@@ -28,6 +29,7 @@ class SongResultAdapter(
             binding.ivAddToFavorite.setOnClickListener {
                 onFavoriteIconClick(songList!!)
             }
+            binding.llNotFoundSong.visibility = if (isLastPosition) View.VISIBLE else View.GONE
         }
     }
 
@@ -41,7 +43,8 @@ class SongResultAdapter(
         holder: SongResultViewHolder,
         position: Int
     ) {
-        holder.bindData(songList?.get(position))
+        val isLastPosition = position == itemCount - 1
+        holder.bindData(songList?.get(position), isLastPosition)
     }
 
     override fun getItemCount(): Int = songList!!.size
