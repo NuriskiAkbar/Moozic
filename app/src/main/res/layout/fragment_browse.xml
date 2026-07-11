@@ -52,6 +52,9 @@
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:textColor="@color/text_primary"
+            android:maxLines="1"
+            android:inputType="text"
+            android:imeOptions="actionDone|actionSearch"
             android:textSize="14sp" />
 
     </com.google.android.material.textfield.TextInputLayout>
