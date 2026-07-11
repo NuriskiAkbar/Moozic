@@ -1,6 +1,5 @@
 package id.rhiquest.mozzic.Utils.NetworkUtils
 
-import android.widget.TextView
 import id.rhiquest.mozzic.Utils.DataUtils.SongItem
 
 object TextUtils {

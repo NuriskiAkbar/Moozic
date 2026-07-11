@@ -1,9 +1,10 @@
 package id.rhiquest.mozzic
 
 import android.annotation.SuppressLint
-import com.bumptech.glide.Glide
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
@@ -11,11 +12,15 @@ import android.view.LayoutInflater
 import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
+import com.bumptech.glide.Glide
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
@@ -28,13 +33,6 @@ import id.rhiquest.mozzic.Utils.NetworkUtils.TextUtils
 import id.rhiquest.mozzic.databinding.ActivityMainBinding
 import id.rhiquest.mozzic.databinding.LayoutMiniPlayerBinding
 import kotlinx.coroutines.launch
-import kotlin.getValue
-import android.content.BroadcastReceiver
-import android.content.IntentFilter
-import android.net.Uri
-import androidx.core.net.toUri
-import androidx.media3.common.MediaItem
-import androidx.media3.exoplayer.ExoPlayer
 
 class MainActivity : BaseActivity<ActivityMainBinding>() {
 
@@ -203,10 +201,9 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     }
 
     private fun updateNotifProgress(song: SongItem) {
-        val (singer, title) = TextUtils.parseSingerAndTitle(song.title)
         val intent = Intent(this, MusicService::class.java).apply {
-            putExtra(MusicService.EXTRA_TITLE, title)
-            putExtra(MusicService.EXTRA_SINGER, singer)
+            putExtra(MusicService.EXTRA_TITLE, song.title)
+            putExtra(MusicService.EXTRA_SINGER, song.singer)
             putExtra(MusicService.EXTRA_IS_PLAYING, playViewModel.isPlaying.value)
             putExtra(MusicService.EXTRA_THUMBNAIL_URL, song.thumbanailUrl)
             putExtra(MusicService.EXTRA_CURRENT_SECOND, playViewModel.currentSecond.value)
@@ -414,17 +411,14 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     }
 
     private fun LayoutMiniPlayerBinding.bindTitleAndSinger(item: SongItem?) {
-        TextUtils.parseSingerAndTitle(item?.title).let { (singer, title) ->
-            tvTitleMiniPlayer.text = title
-            tvSingerMiniPlayer.text = singer
-        }
+            tvTitleMiniPlayer.text = item?.title
+            tvSingerMiniPlayer.text = item?.singer
     }
 
     private fun startMusicService(song: SongItem, isPlaying: Boolean) {
-        val (singer, title) = TextUtils.parseSingerAndTitle(song.title)
         val intent = Intent(this, MusicService::class.java).apply {
-            putExtra(MusicService.EXTRA_TITLE, title)
-            putExtra(MusicService.EXTRA_SINGER, singer)
+            putExtra(MusicService.EXTRA_TITLE, song.title)
+            putExtra(MusicService.EXTRA_SINGER, song.singer)
             putExtra(MusicService.EXTRA_IS_PLAYING, isPlaying)
             putExtra(MusicService.EXTRA_THUMBNAIL_URL, song.thumbanailUrl)
             putExtra(MusicService.EXTRA_CURRENT_SECOND, playViewModel.currentSecond.value)

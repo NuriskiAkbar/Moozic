@@ -160,10 +160,8 @@ class PlayFragment : BaseFragment<FragmentPlayBinding, PlayViewModel>() {
                 .centerCrop()
                 .into(ivPlayThumbnail)
 
-            TextUtils.parseSingerAndTitle(song.title).let { (singer, title) ->
-                tvPlayTitle.text = title
-                tvPlaySinger.text = singer
-            }
+                tvPlayTitle.text = song.title
+                tvPlaySinger.text = song.singer
 
             // Reset progress
             seekBarProgress.progress = 0
