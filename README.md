@@ -60,26 +60,6 @@ graph TD
 
 ---
 
-## 📈 Git Commit & Roadmap Pengembangan Baru
-
-Berikut adalah daftar kontribusi komitmen fitur baru yang berhasil diintegrasikan ke repositori:
-
-1.  **`Feat(Playlist)`**
-    *   Implementasi struktur Room database untuk tabel `playlist_table` dan `playlist_song_table` (termasuk migrasi versi database).
-    *   Pembuatan layout UI dialog, adapter RecyclerView `ChoosePlaylistAdapter`, serta pemetaan adapter hasil pencarian.
-    *   Penyamaan scope ViewModel detail fragment ke `activityViewModels` agar jumlah lagu di halaman utama langsung diperbarui secara dinamis saat lagu dihapus.
-2.  **`Feat(Lyrics)`**
-    *   Integrasi HTTP Client asinkron `LrcLibService` untuk mengunduh lirik berjalan (`LRC`) gratis dari API LRCLIB.
-    *   Pembuatan parser lirik kustom yang menerjemahkan string `[mm:ss.xx]` ke milidetik secara presisi.
-    *   Pembuatan `LyricsAdapter` dengan visual dynamic highlight (aktif tebal/berwarna aksen, tidak aktif pudar transparan) dan auto-smooth scroll mengikuti detik pemutaran lagu.
-3.  **`Feat(Queue)`**
-    *   Dukungan antrean lagu dinamis (`Playback Queue`) di mana player akan terus memutar lagu lain yang sejenis dalam playlist/favorit secara berurutan.
-4.  **`Fix(MiniPlayer)`**
-    *   Menambahkan trigger navigasi klik pada root Mini Player ke halaman player utama.
-    *   Memperbaiki bug layout di mana Mini Player menutupi layar player utama saat transisi lagu berikutnya otomatis selesai.
-
----
-
 ## 🚀 Cara Menjalankan Aplikasi (Getting Started)
 
 1.  Clone repositori ini:
