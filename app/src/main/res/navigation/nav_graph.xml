@@ -16,8 +16,29 @@
         tools:layout="@layout/fragment_play"/>
 
     <fragment
+        android:id="@+id/playlist_fragment"
+        android:name="id.rhiquest.mozzic.Fragments.PlaylistFragment"
+        tools:layout="@layout/fragment_playlist">
+        <action
+            android:id="@+id/action_playlist_to_detail"
+            app:destination="@id/playlist_detail_fragment" />
+    </fragment>
+
+    <fragment
         android:id="@+id/favorite_fragment"
         android:name="id.rhiquest.mozzic.Fragments.FavoriteFragment"
         tools:layout="@layout/fragment_favorite"/>
+
+    <fragment
+        android:id="@+id/playlist_detail_fragment"
+        android:name="id.rhiquest.mozzic.Fragments.PlaylistDetailFragment"
+        tools:layout="@layout/fragment_playlist_detail">
+        <argument
+            android:name="playlistId"
+            app:argType="integer" />
+        <argument
+            android:name="playlistName"
+            app:argType="string" />
+    </fragment>
 
 </navigation>

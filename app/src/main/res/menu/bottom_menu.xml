@@ -12,6 +12,11 @@
         android:icon="@drawable/android_compact___2"/>
 
     <item
+        android:id="@+id/playlist_fragment"
+        android:title="Playlist"
+        android:icon="@drawable/ph_playlist_fill"/>
+
+    <item
         android:id="@+id/favorite_fragment"
         android:title="Favorite"
         android:icon="@drawable/favorite"/>

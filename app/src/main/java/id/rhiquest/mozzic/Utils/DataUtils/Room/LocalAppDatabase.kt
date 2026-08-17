@@ -8,14 +8,17 @@ import androidx.room.RoomDatabase
 @Database(
     entities = [
         FavoriteEntity::class,
-        LocalSongEntity::class
+        LocalSongEntity::class,
+        PlaylistEntity::class,
+        PlaylistSongEntity::class
                ],
-    version = 2,
+    version = 4,
     exportSchema = false
 )
 abstract class LocalAppDatabase : RoomDatabase() {
     abstract fun favoriteDao(): FavoriteDao
     abstract fun localSongDao(): LocalSongDao
+    abstract fun playlistDao(): PlaylistDao
 
     companion object {
         const val DATABASE_NAME = "local_app_database"
@@ -37,7 +40,11 @@ abstract class LocalAppDatabase : RoomDatabase() {
             LocalAppDatabase::class.java,
             DATABASE_NAME
         )
-            .addMigrations(DatabaseMigrations.MIGRATION_1_2)
+            .addMigrations(
+                DatabaseMigrations.MIGRATION_1_2,
+                DatabaseMigrations.MIGRATION_2_3,
+                DatabaseMigrations.MIGRATION_3_4
+            )
             .build()
     }
 }

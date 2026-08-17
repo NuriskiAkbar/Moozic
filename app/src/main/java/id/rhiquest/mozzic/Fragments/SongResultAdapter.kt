@@ -11,7 +11,8 @@ import id.rhiquest.mozzic.databinding.ItemSearchBinding
 class SongResultAdapter(
     private val songList: List<SongItem>?,
     private val onFavoriteIconClick: (SongItem) -> Unit,
-    private val onPlayDirectIconClick: (SongItem) -> Unit
+    private val onPlayDirectIconClick: (SongItem) -> Unit,
+    private val onPlaylistIconClick: (SongItem) -> Unit
 ): RecyclerView.Adapter<SongResultAdapter.SongResultViewHolder>() {
 
     inner class SongResultViewHolder(private val binding: ItemSearchBinding) : RecyclerView.ViewHolder(binding.root){
@@ -28,6 +29,10 @@ class SongResultAdapter(
 
             binding.ivAddToFavorite.setOnClickListener {
                 onFavoriteIconClick(songList!!)
+            }
+
+            binding.ivAddToPlaylist.setOnClickListener {
+                onPlaylistIconClick(songList!!)
             }
             binding.llNotFoundSong.visibility = if (isLastPosition) View.VISIBLE else View.GONE
         }
