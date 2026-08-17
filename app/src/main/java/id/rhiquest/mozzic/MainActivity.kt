@@ -51,8 +51,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
                 MusicService.ACTION_PLAY -> playViewModel.setPlaying(true)
                 MusicService.ACTION_PAUSE -> playViewModel.setPlaying(false)
                 MusicService.ACTION_STOP -> playViewModel.stopMusic()
-                MusicService.ACTION_NEXT -> playViewModel.playNextFromFavorites()
-                MusicService.ACTION_PREVIOUS -> playViewModel.playPreviousFromFavorites()
+                MusicService.ACTION_NEXT -> playViewModel.playNext()
+                MusicService.ACTION_PREVIOUS -> playViewModel.playPrevious()
                 MusicService.ACTION_SEEK_TO -> {
                     val seekPos = intent.getFloatExtra(MusicService.EXTRA_SEEK_POSITION, 0f)
                     playViewModel.seekTo(seekPos)
@@ -63,10 +63,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     override val inflateBinding: (LayoutInflater) -> ActivityMainBinding
         get() = ActivityMainBinding::inflate
-
-    private val sharedPreferences by lazy {
-        getContext().getSharedPreferences("spLogin", MODE_PRIVATE)
-    }
+    
 
     override fun getContext(): Context {
         return this
@@ -123,6 +120,13 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     private var isLoadingNewVideo = false
 
     private fun initMiniPlayerButtons() {
+        // Click on mini player root to open PlayFragment
+        viewBinding.miniPlayerPanel.root.setOnClickListener {
+            if (::navController.isInitialized) {
+                navController.navigate(R.id.play_fragment)
+            }
+        }
+
         // Play/Pause button — just toggle state, observer handles YouTube
         viewBinding.miniPlayerPanel.ivPlayMiniPlayer.setOnClickListener {
             playViewModel.togglePlayPause()
@@ -223,7 +227,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 super.onPlaybackStateChanged(playbackState)
                 if (playbackState == androidx.media3.common.Player.STATE_ENDED) {
-                    playViewModel.playNextFromFavorites()
+                    playViewModel.playNext()
                 }
             }
         })
@@ -279,8 +283,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
                                 }
                             }
                             PlayerConstants.PlayerState.ENDED -> {
-                                // Auto-play next song from favorites when current song ends
-                                playViewModel.playNextFromFavorites()
+                                // Auto-play next song when current song ends
+                                playViewModel.playNext()
                             }
                             PlayerConstants.PlayerState.VIDEO_CUED, 
                             PlayerConstants.PlayerState.UNKNOWN -> {
@@ -298,7 +302,11 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
                             viewBinding.miniPlayerPanel.root.isVisible = false
                             lastLoadedVideoId = null
                         } else {
-                            viewBinding.miniPlayerPanel.root.isVisible = true
+                            val isPlayFragment = if (::navController.isInitialized) {
+                                navController.currentDestination?.id == R.id.play_fragment
+                            } else false
+                            viewBinding.miniPlayerPanel.root.isVisible = !isPlayFragment
+                            
                             // Only load if video ID changed (prevents restart on resume)
                             if (music.videoId != lastLoadedVideoId) {
                                 isLoadingNewVideo = true
