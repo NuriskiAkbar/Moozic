@@ -133,7 +133,7 @@ class FavoriteFragment : BaseFragment<FragmentFavoriteBinding, FavoriteViewModel
                     adapter = FavoriteAdapter(
                         favoriteList = data,
                         onPlayClick = { songItem ->
-                            playViewModel.playMusic(songItem)
+                            playViewModel.playMusic(songItem, data)
                         },
                         onDeleteClick = { songItem ->
                             viewModel.deleteFavorite(songItem)
@@ -183,7 +183,7 @@ class FavoriteFragment : BaseFragment<FragmentFavoriteBinding, FavoriteViewModel
                     localAdapter = FavoriteAdapter(
                         favoriteList = data,
                         onPlayClick = { songItem ->
-                            playViewModel.playMusic(songItem)
+                            playViewModel.playMusic(songItem, data)
                         },
                         onDeleteClick = { songItem ->
                             Toast.makeText(context, "Hanya dapat menghapus lagu favorit", Toast.LENGTH_SHORT).show()
