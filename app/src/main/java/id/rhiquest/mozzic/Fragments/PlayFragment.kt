@@ -1,6 +1,7 @@
 package id.rhiquest.mozzic.Fragments
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
 import android.widget.Toast
@@ -24,6 +25,7 @@ class PlayFragment : BaseFragment<FragmentPlayBinding, PlayViewModel>() {
         get() = FragmentPlayBinding::inflate
 
     private var isUserSeeking = false
+    private lateinit var lyricsAdapter: LyricsAdapter
 
     override fun initObserver() {
         // Observe current music changes
@@ -50,7 +52,7 @@ class PlayFragment : BaseFragment<FragmentPlayBinding, PlayViewModel>() {
             }
         }
 
-        // Observe current second → update SeekBar + time label
+        // Observe current second → update SeekBar + time label + lyrics autoscroll
         lifecycleScope.launch {
             viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.currentSecond.collect { second ->
@@ -61,6 +63,17 @@ class PlayFragment : BaseFragment<FragmentPlayBinding, PlayViewModel>() {
                             binding?.seekBarProgress?.progress = progress
                         }
                         binding?.tvCurrentTime?.text = formatTime(second)
+                    }
+
+                    // Autoscroll & Highlight lirik
+                    val currentMs = (second * 1000).toLong()
+                    val lyricList = viewModel.lyrics.value
+                    if (lyricList.isNotEmpty() && viewModel.lyricsState.value == LyricsState.HasLyrics) {
+                        val activeIndex = getActiveLineIndex(currentMs, lyricList)
+                        if (activeIndex != -1 && activeIndex != lyricsAdapter.getActivePosition()) {
+                            lyricsAdapter.setActivePosition(activeIndex)
+                            binding?.rvLyrics?.smoothScrollToPosition(activeIndex)
+                        }
                     }
                 }
             }
@@ -74,9 +87,62 @@ class PlayFragment : BaseFragment<FragmentPlayBinding, PlayViewModel>() {
                 }
             }
         }
+
+        // Observe lyrics list updates
+        lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.lyrics.collect { list ->
+                    lyricsAdapter.updateList(list)
+                }
+            }
+        }
+
+        // Observe lyrics state to update UI status
+        lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.lyricsState.collect { state ->
+                    binding?.apply {
+                        when (state) {
+                            is LyricsState.Loading -> {
+                                tvLyricsStatus.visibility = View.VISIBLE
+                                tvLyricsStatus.text = "Memuat lirik dari LRCLIB..."
+                                rvLyrics.visibility = View.GONE
+                            }
+                            is LyricsState.Instrumental -> {
+                                tvLyricsStatus.visibility = View.VISIBLE
+                                tvLyricsStatus.text = "Lagu Instrumental (Tanpa Lirik) 🎧"
+                                rvLyrics.visibility = View.GONE
+                            }
+                            is LyricsState.NoLyrics -> {
+                                tvLyricsStatus.visibility = View.VISIBLE
+                                tvLyricsStatus.text = "Lirik tidak ditemukan di LRCLIB"
+                                rvLyrics.visibility = View.GONE
+                            }
+                            is LyricsState.PlainLyrics -> {
+                                tvLyricsStatus.visibility = View.GONE
+                                rvLyrics.visibility = View.VISIBLE
+                            }
+                            is LyricsState.HasLyrics -> {
+                                tvLyricsStatus.visibility = View.GONE
+                                rvLyrics.visibility = View.VISIBLE
+                            }
+                            else -> {
+                                tvLyricsStatus.visibility = View.VISIBLE
+                                tvLyricsStatus.text = "Lirik tidak tersedia"
+                                rvLyrics.visibility = View.GONE
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     override fun initView() {
+        // Inisialisasi adapter lirik
+        lyricsAdapter = LyricsAdapter(emptyList())
+        binding?.rvLyrics?.adapter = lyricsAdapter
+
         initButtons()
         initSeekBar()
         // Show initial state
@@ -86,6 +152,18 @@ class PlayFragment : BaseFragment<FragmentPlayBinding, PlayViewModel>() {
         } else {
             showEmptyState()
         }
+    }
+
+    private fun getActiveLineIndex(currentMs: Long, lyrics: List<LyricLine>): Int {
+        var activeIndex = -1
+        for (i in lyrics.indices) {
+            if (lyrics[i].timeMs <= currentMs) {
+                activeIndex = i
+            } else {
+                break
+            }
+        }
+        return activeIndex
     }
 
     private fun initSeekBar() {
@@ -134,12 +212,12 @@ class PlayFragment : BaseFragment<FragmentPlayBinding, PlayViewModel>() {
 
             // Previous
             btnPrevious.setOnClickListener {
-                viewModel.playPreviousFromFavorites()
+                viewModel.playPrevious()
             }
 
             // Next
             btnNext.setOnClickListener {
-                viewModel.playNextFromFavorites()
+                viewModel.playNext()
             }
 
             // Stop

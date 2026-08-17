@@ -11,8 +11,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import id.rhiquest.mozzic.Utils.NetworkUtils.LrcLibService
+import id.rhiquest.mozzic.Utils.NetworkUtils.LrcResponse
 
 class PlayViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentMusic = MutableStateFlow<SongItem?>(null)
@@ -32,12 +35,28 @@ class PlayViewModel(application: Application) : AndroidViewModel(application) {
     val seekToEvent: SharedFlow<Float> = _seekToEvent
 
     private val dbHelper = DatabaseHelperImpl(LocalAppDatabase.getInstance(application))
+    private val lrcService = LrcLibService()
 
-    fun playMusic(song: SongItem) {
+    private val _lyrics = MutableStateFlow<List<LyricLine>>(emptyList())
+    val lyrics: StateFlow<List<LyricLine>> = _lyrics.asStateFlow()
+
+    private val _lyricsState = MutableStateFlow<LyricsState>(LyricsState.Empty)
+    val lyricsState: StateFlow<LyricsState> = _lyricsState.asStateFlow()
+
+    private val _currentQueue = MutableStateFlow<List<SongItem>>(emptyList())
+    val currentQueue: StateFlow<List<SongItem>> = _currentQueue.asStateFlow()
+
+    fun playMusic(song: SongItem, queue: List<SongItem> = emptyList()) {
         _isPlaying.value = true
         _currentSecond.value = 0f
         _totalDuration.value = 0f
         _currentMusic.value = song
+        if (queue.isNotEmpty()) {
+            _currentQueue.value = queue
+        } else {
+            _currentQueue.value = listOf(song)
+        }
+        loadLyricsForSong(song)
     }
 
     /** Switch to a new song while preserving the given play state */
@@ -46,6 +65,93 @@ class PlayViewModel(application: Application) : AndroidViewModel(application) {
         _currentSecond.value = 0f
         _totalDuration.value = 0f
         _currentMusic.value = song
+        loadLyricsForSong(song)
+    }
+
+    private fun loadLyricsForSong(song: SongItem) {
+        viewModelScope.launch {
+            _lyricsState.value = LyricsState.Loading
+            _lyrics.value = emptyList()
+            try {
+                val response = lrcService.fetchLyrics(song.singer, song.title)
+                if (response != null) {
+                    if (response.instrumental == true) {
+                        _lyricsState.value = LyricsState.Instrumental
+                    } else if (!response.syncedLyrics.isNullOrBlank()) {
+                        val parsed = parseLrc(response.syncedLyrics)
+                        if (parsed.isNotEmpty()) {
+                            _lyrics.value = parsed
+                            _lyricsState.value = LyricsState.HasLyrics
+                        } else if (!response.plainLyrics.isNullOrBlank()) {
+                            val plainLines = response.plainLyrics.split("\n").map { LyricLine(0L, it) }
+                            _lyrics.value = plainLines
+                            _lyricsState.value = LyricsState.PlainLyrics
+                        } else {
+                            _lyricsState.value = LyricsState.NoLyrics
+                        }
+                    } else if (!response.plainLyrics.isNullOrBlank()) {
+                        val plainLines = response.plainLyrics.split("\n").map { LyricLine(0L, it) }
+                        _lyrics.value = plainLines
+                        _lyricsState.value = LyricsState.PlainLyrics
+                    } else {
+                        _lyricsState.value = LyricsState.NoLyrics
+                    }
+                } else {
+                    _lyricsState.value = LyricsState.NoLyrics
+                }
+            } catch (e: Exception) {
+                _lyricsState.value = LyricsState.NoLyrics
+            }
+        }
+    }
+
+    private fun parseLrc(lrcText: String): List<LyricLine> {
+        val lyricList = mutableListOf<LyricLine>()
+        val lines = lrcText.split("\n")
+        for (line in lines) {
+            val trimmed = line.trim()
+            if (!trimmed.startsWith("[")) continue
+            val closeBracketIndex = trimmed.indexOf("]")
+            if (closeBracketIndex == -1) continue
+            val timeString = trimmed.substring(1, closeBracketIndex)
+            val lyricText = trimmed.substring(closeBracketIndex + 1).trim()
+            
+            val timeMs = parseTimeStringToMs(timeString)
+            if (timeMs != null) {
+                lyricList.add(LyricLine(timeMs, lyricText))
+            }
+        }
+        return lyricList.sortedBy { it.timeMs }
+    }
+
+    private fun parseTimeStringToMs(timeString: String): Long? {
+        val parts = timeString.split(":")
+        if (parts.size < 2) return null
+        try {
+            val min = parts[0].toLong()
+            val rest = parts[1]
+            val dotIndex = rest.indexOf(".")
+            val sec: Long
+            val ms: Long
+            if (dotIndex != -1) {
+                sec = rest.substring(0, dotIndex).toLong()
+                val msStr = rest.substring(dotIndex + 1)
+                val parsedMs = msStr.toLong()
+                ms = if (msStr.length == 2) {
+                    parsedMs * 10
+                } else if (msStr.length == 1) {
+                    parsedMs * 100
+                } else {
+                    parsedMs
+                }
+            } else {
+                sec = rest.toLong()
+                ms = 0L
+            }
+            return (min * 60 + sec) * 1000 + ms
+        } catch (e: Exception) {
+            return null
+        }
     }
 
     fun togglePlayPause() {
@@ -75,6 +181,50 @@ class PlayViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _seekToEvent.emit(second)
         }
+    }
+
+    fun playNext() {
+        val queue = _currentQueue.value
+        if (queue.isEmpty()) {
+            playNextFromFavorites()
+            return
+        }
+        val current = _currentMusic.value
+        if (current == null) {
+            playNextFromFavorites()
+            return
+        }
+        val currentIndex = queue.indexOfFirst { it.videoId == current.videoId }
+        if (currentIndex == -1) {
+            playNextFromFavorites()
+            return
+        }
+        val nextIndex = (currentIndex + 1) % queue.size
+        val nextSong = queue[nextIndex]
+        val wasPlaying = _isPlaying.value
+        switchMusic(nextSong, wasPlaying)
+    }
+
+    fun playPrevious() {
+        val queue = _currentQueue.value
+        if (queue.isEmpty()) {
+            playPreviousFromFavorites()
+            return
+        }
+        val current = _currentMusic.value
+        if (current == null) {
+            playPreviousFromFavorites()
+            return
+        }
+        val currentIndex = queue.indexOfFirst { it.videoId == current.videoId }
+        if (currentIndex == -1) {
+            playPreviousFromFavorites()
+            return
+        }
+        val prevIndex = if (currentIndex <= 0) queue.size - 1 else currentIndex - 1
+        val prevSong = queue[prevIndex]
+        val wasPlaying = _isPlaying.value
+        switchMusic(prevSong, wasPlaying)
     }
 
     fun playNextFromFavorites() {
@@ -160,4 +310,18 @@ class PlayViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+}
+
+data class LyricLine(
+    val timeMs: Long,
+    val text: String
+)
+
+sealed interface LyricsState {
+    object Empty : LyricsState
+    object Loading : LyricsState
+    object Instrumental : LyricsState
+    object NoLyrics : LyricsState
+    object PlainLyrics : LyricsState
+    object HasLyrics : LyricsState
 }

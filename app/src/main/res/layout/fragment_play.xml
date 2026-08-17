@@ -279,6 +279,46 @@
 
             </LinearLayout>
 
+            <!-- Lyrics Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardLyrics"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="24dp"
+                app:cardBackgroundColor="@color/song_info_bg"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeColor="@color/song_info_stroke"
+                app:strokeWidth="1dp">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tv_lyrics_status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:gravity="center"
+                        android:text="Memuat lirik..."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_lyrics"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:visibility="gone"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+                </FrameLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Hint -->
             <TextView
                 android:id="@+id/tvNowPlayingHint"
