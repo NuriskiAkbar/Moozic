@@ -81,7 +81,7 @@ class PlaylistDetailFragment : BaseFragment<FragmentPlaylistDetailBinding, Playl
                         videoId = it.songId
                     )
                 }
-                playViewModel.playMusic(songItem, queue)
+                playViewModel.playMusic(songItem, queue, playlistId)
             },
             onDeleteClick = { playlistSong ->
                 viewModel.deleteSongFromPlaylist(playlistSong.id, playlistId)

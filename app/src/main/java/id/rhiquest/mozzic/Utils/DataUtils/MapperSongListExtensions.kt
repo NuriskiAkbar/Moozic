@@ -1,8 +1,6 @@
 package id.rhiquest.mozzic.Utils.DataUtils
 
-import id.rhiquest.mozzic.Utils.NetworkUtils.ItemsItem
 import id.rhiquest.mozzic.Utils.NetworkUtils.SearchResponse
-import kotlin.math.sin
 
 
     fun SearchResponse.toSongItems(): List<SongItem> {

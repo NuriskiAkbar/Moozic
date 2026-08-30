@@ -46,11 +46,15 @@ class PlayViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentQueue = MutableStateFlow<List<SongItem>>(emptyList())
     val currentQueue: StateFlow<List<SongItem>> = _currentQueue.asStateFlow()
 
-    fun playMusic(song: SongItem, queue: List<SongItem> = emptyList()) {
+    private val _currentPlaylistId = MutableStateFlow<Int?>(null)
+    val currentPlaylistId: StateFlow<Int?> = _currentPlaylistId.asStateFlow()
+
+    fun playMusic(song: SongItem, queue: List<SongItem> = emptyList(), playListId: Int? = null) {
         _isPlaying.value = true
         _currentSecond.value = 0f
         _totalDuration.value = 0f
         _currentMusic.value = song
+        _currentPlaylistId.value = playListId
         if (queue.isNotEmpty()) {
             _currentQueue.value = queue
         } else {
@@ -184,6 +188,31 @@ class PlayViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun playNext() {
+        val playListId = _currentPlaylistId.value
+        if (playListId != null) {
+            viewModelScope.launch {
+                try {
+                    val latestSong = dbHelper.getSongsForPlaylist(playListId)
+                    val newQueue = latestSong.map {
+                        SongItem(
+                            singer = it.artist,
+                            title = it.title,
+                            thumbanailUrl = it.image,
+                            videoId = it.songId
+                        )
+                    }
+                    _currentQueue.value = newQueue
+                    determineAndPlayNext()
+                } catch (e: Exception){
+                    determineAndPlayNext()
+                }
+            }
+        } else {
+            determineAndPlayNext()
+        }
+    }
+
+    private fun determineAndPlayNext(){
         val queue = _currentQueue.value
         if (queue.isEmpty()) {
             playNextFromFavorites()
@@ -206,6 +235,31 @@ class PlayViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun playPrevious() {
+        val playlistId = _currentPlaylistId.value
+        if (playlistId != null) {
+            viewModelScope.launch {
+                try {
+                    val latestSong = dbHelper.getSongsForPlaylist(playlistId)
+                    val newQueue = latestSong.map {
+                        SongItem(
+                            singer = it.artist,
+                            title = it.title,
+                            thumbanailUrl = it.image,
+                            videoId = it.songId
+                        )
+                    }
+                    _currentQueue.value = newQueue
+                    determineAndPlayPrevious()
+                } catch (e: Exception){
+                    determineAndPlayPrevious()
+                }
+            }
+        } else {
+            determineAndPlayPrevious()
+        }
+    }
+
+    private fun determineAndPlayPrevious() {
         val queue = _currentQueue.value
         if (queue.isEmpty()) {
             playPreviousFromFavorites()
